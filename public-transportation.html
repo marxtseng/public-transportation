@@ -1,0 +1,204 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../paper-toolbar/paper-toolbar.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../paper-menu/paper-menu.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../moment-element/moment-with-locales-import.html">
+<!--
+`public-transportation`
+@demo demo/index.html
+-->
+<dom-module id="public-transportation">
+    <style include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning"></style>
+    <style>
+    :host {
+        display: block;
+        position: relative;
+        box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        height: 100%;
+        --primary-color: var(--paper-teal-500);
+        --default-primary-color: var(--paper-teal-500);
+        --light-primary-color: var(--paper-teal-100);
+        --dark-primary-color: var(--paper-teal-700);
+    }
+    
+    :host paper-toolbar paper-input,
+    :host paper-toolbar paper-dropdown-menu {
+        --paper-input-container-color: #eee;
+        --paper-input-container-focus-color: #fff;
+        --paper-input-container-input-color: #fff;
+        margin: 0 4px;
+    }
+    
+    :host [route] paper-item {
+        color: var(--secondary-text-color);
+        border-top: 1px solid #eee;
+        background: #fff;
+    }
+    
+    :host [route] paper-item:hover {
+        background-color: rgba(0, 0, 0, .037);
+        cursor: pointer;
+    }
+    </style>
+    <template>
+        <paper-header-panel mode="waterfall">
+            <paper-toolbar>
+                <paper-dropdown-menu label="Type" style="width:100px">
+                    <paper-menu class="dropdown-content" selected="{{route.type}}" attr-for-selected="value">
+                        <paper-item value="departure">Departure</paper-item>
+                        <paper-item value="arrival">Arrival</paper-item>
+                    </paper-menu>
+                </paper-dropdown-menu>
+                <paper-input type="time" label="Time" value="{{route.time}}"></paper-input>
+            </paper-toolbar>
+            <paper-toolbar>
+                <paper-dropdown-menu label="Departure Station">
+                    <paper-menu class="dropdown-content" selected="{{route.departure}}" attr-for-selected="value">
+                        <template is="dom-repeat" items="{{data.stations}}">
+                            <paper-item value="{{item.name}}">{{item.name}}</paper-item>
+                        </template>
+                    </paper-menu>
+                </paper-dropdown-menu>
+                <paper-dropdown-menu label="Arrival Station">
+                    <paper-menu class="dropdown-content" selected="{{route.arrival}}" attr-for-selected="value">
+                        <template is="dom-repeat" items="{{data.stations}}">
+                            <paper-item value="{{item.name}}">{{item.name}}</paper-item>
+                        </template>
+                    </paper-menu>
+                </paper-dropdown-menu>
+            </paper-toolbar>
+            <div route>
+                <paper-item hidden$="{{!route.trains.length}}">
+                    <div class="flex-auto">No.</div>
+                    <div class="flex-auto">Departure</div>
+                    <div class="flex-auto">Arrival</div>
+                    <div class="flex-auto">Duration</div>
+                </paper-item>
+                <template is="dom-repeat" items="{{route.trains}}">
+                    <paper-item>
+                        <div class="flex-auto">{{item.train_no}}</div>
+                        <div class="flex-auto">{{item.departure_time}}</div>
+                        <div class="flex-auto">{{item.arrival_time}}</div>
+                        <div class="flex-auto">{{item.duration}} min</div>
+                    </paper-item>
+                </template>
+            </div>
+        </paper-header-panel>
+    </template>
+    <script>
+    Polymer({
+
+        is: 'public-transportation',
+
+        properties: {
+            route: {
+                type: Object,
+                value: {
+                    time: '10:00',
+                    type: 'departure',
+                    departure: 'Taipei',
+                    arrival: 'Hsinchu'
+                }
+            },
+            data: Object
+        },
+
+        observers: [
+            '_route(route.type, route.time, route.departure, route.arrival)'
+        ],
+
+        ready: function() {
+            this._load();
+        },
+
+        _load: function() {
+            fetch('data.json').then(function(response) {
+                response.json().then(function(data) {
+                    this.set('data', data);
+                    this._route();
+                }.bind(this));
+            }.bind(this));
+        },
+
+        _route: function() {
+            if (!this.data) return;
+
+            var _trains = [],
+                departure_idx, arrival_idx;
+
+            this.data.stations.forEach(function(s, i) {
+                if (s.name === this.route.departure)
+                    departure_idx = i;
+                if (s.name === this.route.arrival)
+                    arrival_idx = i;
+            }.bind(this));
+
+            if (departure_idx > arrival_idx) {
+                this.data.trains.northbound.forEach(function(t, i) {
+                    var _departure, _arrival;
+                    t.stations.forEach(function(s, j) {
+                        if (s.name === this.route.departure) {
+                            if (this.route.type === 'departure' && (moment.duration(s.time) >= moment.duration(this.route.time)))
+                                _departure = s;
+                            else if (this.route.type === 'arrival')
+                                _departure = s;
+                        }
+
+                        if (s.name === this.route.arrival) {
+                            if (this.route.type === 'arrival' && (moment.duration(s.time) <= moment.duration(this.route.time)))
+                                _arrival = s;
+                            else if (this.route.type === 'departure')
+                                _arrival = s;
+                        }
+                    }.bind(this));
+
+                    if (_departure && _arrival) {
+                        _trains.push({
+                            train_no: t.train_no.length === 3 ? ['0', t.train_no].join('') : t.train_no,
+                            departure_time: _departure.time,
+                            arrival_time: _arrival.time,
+                            duration: (moment.duration(_arrival.time) - moment.duration(_departure.time)) / 60000
+                        });
+                    }
+                }.bind(this));
+            } else if (departure_idx < arrival_idx) {
+                this.data.trains.southbound.forEach(function(t, i) {
+                    var _departure, _arrival;
+                    t.stations.forEach(function(s, j) {
+                        if (s.name === this.route.departure) {
+                            if (this.route.type === 'departure' && (moment.duration(s.time) >= moment.duration(this.route.time)))
+                                _departure = s;
+                            else if (this.route.type === 'arrival')
+                                _departure = s;
+                        }
+
+                        if (s.name === this.route.arrival) {
+                            if (this.route.type === 'arrival' && (moment.duration(s.time) <= moment.duration(this.route.time)))
+                                _arrival = s;
+                            else if (this.route.type === 'departure')
+                                _arrival = s;
+                        }
+                    }.bind(this));
+
+                    if (_departure && _arrival) {
+                        _trains.push({
+                            train_no: t.train_no.length === 3 ? ['0', t.train_no].join('') : t.train_no,
+                            departure_time: _departure.time,
+                            arrival_time: _arrival.time,
+                            duration: (moment.duration(_arrival.time) - moment.duration(_departure.time)) / 60000
+                        });
+                    }
+                }.bind(this));
+            }
+
+            this.set('route.trains', _trains);
+        }
+    });
+    </script>
+</dom-module>

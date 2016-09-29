@@ -1,6 +1,6 @@
 # Public Transportation
 
-![ScreenShot](https://raw.githubusercontent.com/marxtseng/meet-up-event-planner/master/Public%20Transportation.png)
+![ScreenShot](https://raw.githubusercontent.com/marxtseng/public-transportation/master/Public%20Transportation.png)
 
 ## Install the Polymer-CLI
 

@@ -21,75 +21,86 @@
         box-sizing: border-box;
         -moz-box-sizing: border-box;
         height: 100%;
-        --primary-color: var(--paper-teal-500);
-        --default-primary-color: var(--paper-teal-500);
-        --light-primary-color: var(--paper-teal-100);
-        --dark-primary-color: var(--paper-teal-700);
+        --primary-color: var(--paper-teal-700);
+        --default-primary-color: var(--paper-teal-700);
+        --light-primary-color: var(--paper-teal-300);
+        --dark-primary-color: var(--paper-teal-900);
     }
     
-    :host paper-toolbar paper-input,
-    :host paper-toolbar paper-dropdown-menu {
+    :host .paper-header {
+        background: var(--paper-teal-700);
+    }
+    
+    :host nav,
+    :host main {
+        max-width: 1024px;
+        margin: 0 auto;
+    }
+    
+    :host nav paper-input {
         --paper-input-container-color: #eee;
         --paper-input-container-focus-color: #fff;
         --paper-input-container-input-color: #fff;
-        margin: 0 4px;
+        margin: 0 8px;
+        flex: 1 1 120px;
     }
     
-    :host [route] paper-item {
+    :host main paper-item {
         color: var(--secondary-text-color);
         border-top: 1px solid #eee;
         background: #fff;
     }
     
-    :host [route] paper-item:hover {
+    :host main paper-item:hover {
         background-color: rgba(0, 0, 0, .037);
         cursor: pointer;
+    }
+
+    :host .column-header {
+        color: var(--paper-teal-700);
+        font-weight: 700;
     }
     </style>
     <template>
         <paper-header-panel mode="waterfall">
-            <paper-toolbar>
-                <paper-dropdown-menu label="Type" style="width:100px">
-                    <paper-menu class="dropdown-content" selected="{{route.type}}" attr-for-selected="value">
-                        <paper-item value="departure">Departure</paper-item>
-                        <paper-item value="arrival">Arrival</paper-item>
-                    </paper-menu>
-                </paper-dropdown-menu>
-                <paper-input type="time" label="Time" value="{{route.time}}"></paper-input>
-            </paper-toolbar>
-            <paper-toolbar>
-                <paper-dropdown-menu label="Departure Station">
-                    <paper-menu class="dropdown-content" selected="{{route.departure}}" attr-for-selected="value">
-                        <template is="dom-repeat" items="{{data.stations}}">
-                            <paper-item value="{{item.name}}">{{item.name}}</paper-item>
-                        </template>
-                    </paper-menu>
-                </paper-dropdown-menu>
-                <paper-dropdown-menu label="Arrival Station">
-                    <paper-menu class="dropdown-content" selected="{{route.arrival}}" attr-for-selected="value">
-                        <template is="dom-repeat" items="{{data.stations}}">
-                            <paper-item value="{{item.name}}">{{item.name}}</paper-item>
-                        </template>
-                    </paper-menu>
-                </paper-dropdown-menu>
-            </paper-toolbar>
-            <div route>
+            <header class="paper-header">
+                <nav class="layout horizontal center wrap">
+                    <div class="layout horizontal center wrap flex-auto">
+                        <paper-input label="Type" value="{{route.type}}" list="typeList" autocomplete></paper-input>
+                        <paper-input label="Time" value="{{route.time}}" type="time"></paper-input>
+                    </div>
+                    <div class="layout horizontal center wrap flex-auto">
+                        <paper-input label="Departure Station" value="{{route.departure}}" list="stationList" autocomplete></paper-input>
+                        <paper-input label="Arrival Station" value="{{route.arrival}}" list="stationList" autocomplete></paper-input>
+                    </div>
+                </nav>
+            </header>
+            <main>
                 <paper-item hidden$="{{!route.trains.length}}">
-                    <div class="flex-auto">No.</div>
-                    <div class="flex-auto">Departure</div>
-                    <div class="flex-auto">Arrival</div>
-                    <div class="flex-auto">Duration</div>
+                    <div class="flex-auto column-header">Train</div>
+                    <div class="flex-auto column-header">Departure</div>
+                    <div class="flex-auto column-header">Arrival</div>
+                    <div class="flex-auto column-header">Duration</div>
                 </paper-item>
                 <template is="dom-repeat" items="{{route.trains}}">
                     <paper-item>
                         <div class="flex-auto">{{item.train_no}}</div>
                         <div class="flex-auto">{{item.departure_time}}</div>
                         <div class="flex-auto">{{item.arrival_time}}</div>
-                        <div class="flex-auto">{{item.duration}} min</div>
+                        <div class="flex-auto">{{item.duration}} mins</div>
                     </paper-item>
                 </template>
-            </div>
+            </main>
         </paper-header-panel>
+        <datalist id="typeList">
+            <option value="Departure">Departure</option>
+            <option value="Arrival">Arrival</option>
+        </datalist>
+        <datalist id="stationList">
+            <template is="dom-repeat" items="{{data.stations}}">
+                <option value="{{item.name}}">{{item.name}}</option>
+            </template>
+        </datalist>
     </template>
     <script>
     Polymer({
@@ -101,7 +112,7 @@
                 type: Object,
                 value: {
                     time: '10:00',
-                    type: 'departure',
+                    type: 'Departure',
                     departure: 'Taipei',
                     arrival: 'Hsinchu'
                 }
@@ -144,16 +155,16 @@
                     var _departure, _arrival;
                     t.stations.forEach(function(s, j) {
                         if (s.name === this.route.departure) {
-                            if (this.route.type === 'departure' && (moment.duration(s.time) >= moment.duration(this.route.time)))
+                            if (this.route.type === 'Departure' && (moment.duration(s.time) >= moment.duration(this.route.time)))
                                 _departure = s;
-                            else if (this.route.type === 'arrival')
+                            else if (this.route.type === 'Arrival')
                                 _departure = s;
                         }
 
                         if (s.name === this.route.arrival) {
-                            if (this.route.type === 'arrival' && (moment.duration(s.time) <= moment.duration(this.route.time)))
+                            if (this.route.type === 'Arrival' && (moment.duration(s.time) <= moment.duration(this.route.time)))
                                 _arrival = s;
-                            else if (this.route.type === 'departure')
+                            else if (this.route.type === 'Departure')
                                 _arrival = s;
                         }
                     }.bind(this));
@@ -172,16 +183,16 @@
                     var _departure, _arrival;
                     t.stations.forEach(function(s, j) {
                         if (s.name === this.route.departure) {
-                            if (this.route.type === 'departure' && (moment.duration(s.time) >= moment.duration(this.route.time)))
+                            if (this.route.type === 'Departure' && (moment.duration(s.time) >= moment.duration(this.route.time)))
                                 _departure = s;
-                            else if (this.route.type === 'arrival')
+                            else if (this.route.type === 'Arrival')
                                 _departure = s;
                         }
 
                         if (s.name === this.route.arrival) {
-                            if (this.route.type === 'arrival' && (moment.duration(s.time) <= moment.duration(this.route.time)))
+                            if (this.route.type === 'Arrival' && (moment.duration(s.time) <= moment.duration(this.route.time)))
                                 _arrival = s;
-                            else if (this.route.type === 'departure')
+                            else if (this.route.type === 'Departure')
                                 _arrival = s;
                         }
                     }.bind(this));

@@ -7,8 +7,7 @@ self.addEventListener('install', function(event) {
                 '/',
                 '/public-transportation.html',
                 '/public-transportation.js',
-                '/data.json',
-                '/webcomponents-lite.min.js'
+                '/data.json'
             ]);
         })
     );
